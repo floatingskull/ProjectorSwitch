@@ -85,52 +85,7 @@ string_function BuildComSettingString(integer comSpeed) {
 	integer spd;
 	string comSpeed$[16];
 
-	spd=0;
-
-/*	switch(comSpeed)
-	{
-		case (300):
-			spd = spd | 0x0000;
-		case (600):
-			spd = spd | 0x0001;
-		case (1200):
-			spd = spd | 0x0002;
-		case (1800):
-			spd = spd | 0x0080;		
-		case (2400):
-			spd = spd | 0x0003;		
-		case (3600):
-			spd = spd | 0x0081;
-		case (4800):
-			spd = spd | 0x0004;
-		case (7200):
-			spd = spd | 0x0082;
-		case (9600):
-			spd = spd | 0x0005;		
-		case (14400):
-			spd = spd | 0x0083;
-		case (19200):
-			spd = spd | 0x0006;		
-		case (28800):	
-			spd = spd | 0x0084;		
-		case (38400):	
-			spd = spd | 0x0007;		
-		case (57600):
-			spd = spd | 0x0085;
-		case (115):	
-			spd = spd | 0x0086;		
-		default:
-		{
-			spd = spd | 0x0005;
-			if(debug){ print("Invalid baud rate %d received - assuming 9600 baud.\n", spd); }
-		}
-	}
-	
-	makestring(comSpeed$, "%c%c%c%c%c%c%c", 0x12, 0x80, 0x00, LOW(spd), HIGH(spd), 0x00, 0x00);
-	
-	return(comSpeed$);
-}*/
-	
+	spd=0;	
 
 	switch(comSpeed) {
 		case(9600): comSpeed$ = "\x12\x80\x00\x25\x00\x00\x00";
@@ -700,62 +655,3 @@ Function Main()
     
     PacketTransmission$ = proj[sel].comSetting$;
 }
-
-
-
-
-/*
-set serial speed to 9600
-
-\x12\x80\x00\x25\x00\x00\x00
-
-set serial speed to 19200
-
-\x12\x80\x00\x26\x00\x00\x00
-*/
-	
-	/* What follows is the old official Crestron module's method of building
-	serial strings to send to the comswitch.
-	switch(comSpeed)
-	{
-		case (300):
-			spd = spd | 0x0000;
-		case (600):
-			spd = spd | 0x0001;
-		case (1200):
-			spd = spd | 0x0002;
-		case (1800):
-			spd = spd | 0x0080;		
-		case (2400):
-			spd = spd | 0x0003;		
-		case (3600):
-			spd = spd | 0x0081;
-		case (4800):
-			spd = spd | 0x0004;
-		case (7200):
-			spd = spd | 0x0082;
-		case (9600):
-			spd = spd | 0x0005;		
-		case (14400):
-			spd = spd | 0x0083;
-		case (19200):
-			spd = spd | 0x0006;		
-		case (28800):	
-			spd = spd | 0x0084;		
-		case (38400):	
-			spd = spd | 0x0007;		
-		case (57600):
-			spd = spd | 0x0085;
-		case (115):	
-			spd = spd | 0x0086;		
-		default:
-		{
-			spd = spd | 0x0005;
-			if(debug){ print("Invalid baud rate %d received - assuming 9600 baud.\n", spd); }
-		}
-	}
-	
-	makestring(comSpeed$, "%c%c%c%c%c%c%c", 0x12, 0x80, 0x00, LOW(spd), HIGH(spd), 0x00, 0x00);
-	
-	return(comSpeed$);
-}*/

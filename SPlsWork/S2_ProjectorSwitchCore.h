@@ -1,0 +1,210 @@
+#ifndef __S2_PROJECTORSWITCHCORE_H__
+#define __S2_PROJECTORSWITCHCORE_H__
+
+
+
+/*
+* STRUCTURE S2_ProjectorSwitchCore__PROJSTRINGS
+*/
+#define PROJSTRINGS__S2_ProjectorSwitchCore_NAME$_STRING_MAX_LEN 64
+#define PROJSTRINGS__S2_ProjectorSwitchCore_ON$_STRING_MAX_LEN 64
+#define PROJSTRINGS__S2_ProjectorSwitchCore_OFF$_STRING_MAX_LEN 64
+#define PROJSTRINGS__S2_ProjectorSwitchCore_INPUTSEL$_STRING_MAX_LEN 64
+#define PROJSTRINGS__S2_ProjectorSwitchCore_BLANKON$_STRING_MAX_LEN 64
+#define PROJSTRINGS__S2_ProjectorSwitchCore_BLANKOFF$_STRING_MAX_LEN 64
+#define PROJSTRINGS__S2_ProjectorSwitchCore_AUTOIMAGE$_STRING_MAX_LEN 64
+#define PROJSTRINGS__S2_ProjectorSwitchCore_PWRQUERY$_STRING_MAX_LEN 64
+#define PROJSTRINGS__S2_ProjectorSwitchCore_BLANKQUERY$_STRING_MAX_LEN 64
+#define PROJSTRINGS__S2_ProjectorSwitchCore_LAMP1QUERY$_STRING_MAX_LEN 64
+#define PROJSTRINGS__S2_ProjectorSwitchCore_LAMP2QUERY$_STRING_MAX_LEN 64
+#define PROJSTRINGS__S2_ProjectorSwitchCore_LAMP3QUERY$_STRING_MAX_LEN 64
+#define PROJSTRINGS__S2_ProjectorSwitchCore_LAMP4QUERY$_STRING_MAX_LEN 64
+#define PROJSTRINGS__S2_ProjectorSwitchCore_FLTQUERY$_STRING_MAX_LEN 64
+#define PROJSTRINGS__S2_ProjectorSwitchCore_COMSETTING$_STRING_MAX_LEN 64
+START_STRUCTURE_DEFINITION( S2_ProjectorSwitchCore, PROJSTRINGS )
+{
+   CREATE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__NAME$, PROJSTRINGS__S2_ProjectorSwitchCore_NAME$_STRING_MAX_LEN );
+   DECLARE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__NAME$ );
+   CREATE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__ON$, PROJSTRINGS__S2_ProjectorSwitchCore_ON$_STRING_MAX_LEN );
+   DECLARE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__ON$ );
+   CREATE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__OFF$, PROJSTRINGS__S2_ProjectorSwitchCore_OFF$_STRING_MAX_LEN );
+   DECLARE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__OFF$ );
+   CREATE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__INPUTSEL$, PROJSTRINGS__S2_ProjectorSwitchCore_INPUTSEL$_STRING_MAX_LEN );
+   DECLARE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__INPUTSEL$ );
+   CREATE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__BLANKON$, PROJSTRINGS__S2_ProjectorSwitchCore_BLANKON$_STRING_MAX_LEN );
+   DECLARE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__BLANKON$ );
+   CREATE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__BLANKOFF$, PROJSTRINGS__S2_ProjectorSwitchCore_BLANKOFF$_STRING_MAX_LEN );
+   DECLARE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__BLANKOFF$ );
+   CREATE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__AUTOIMAGE$, PROJSTRINGS__S2_ProjectorSwitchCore_AUTOIMAGE$_STRING_MAX_LEN );
+   DECLARE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__AUTOIMAGE$ );
+   CREATE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__PWRQUERY$, PROJSTRINGS__S2_ProjectorSwitchCore_PWRQUERY$_STRING_MAX_LEN );
+   DECLARE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__PWRQUERY$ );
+   CREATE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__BLANKQUERY$, PROJSTRINGS__S2_ProjectorSwitchCore_BLANKQUERY$_STRING_MAX_LEN );
+   DECLARE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__BLANKQUERY$ );
+   CREATE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__LAMP1QUERY$, PROJSTRINGS__S2_ProjectorSwitchCore_LAMP1QUERY$_STRING_MAX_LEN );
+   DECLARE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__LAMP1QUERY$ );
+   CREATE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__LAMP2QUERY$, PROJSTRINGS__S2_ProjectorSwitchCore_LAMP2QUERY$_STRING_MAX_LEN );
+   DECLARE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__LAMP2QUERY$ );
+   CREATE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__LAMP3QUERY$, PROJSTRINGS__S2_ProjectorSwitchCore_LAMP3QUERY$_STRING_MAX_LEN );
+   DECLARE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__LAMP3QUERY$ );
+   CREATE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__LAMP4QUERY$, PROJSTRINGS__S2_ProjectorSwitchCore_LAMP4QUERY$_STRING_MAX_LEN );
+   DECLARE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__LAMP4QUERY$ );
+   CREATE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__FLTQUERY$, PROJSTRINGS__S2_ProjectorSwitchCore_FLTQUERY$_STRING_MAX_LEN );
+   DECLARE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__FLTQUERY$ );
+   CREATE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__COMSETTING$, PROJSTRINGS__S2_ProjectorSwitchCore_COMSETTING$_STRING_MAX_LEN );
+   DECLARE_STRING_STRUCT( S2_ProjectorSwitchCore, PROJSTRINGS__COMSETTING$ );
+   unsigned short PROJSTRINGS__COMSPEED;
+   unsigned short PROJSTRINGS__SUTIME;
+   unsigned short PROJSTRINGS__SDTIME;
+};
+
+
+/*
+* Constructor and Destructor
+*/
+int S2_ProjectorSwitchCore_PROJSTRINGS_Constructor ( START_STRUCTURE_DEFINITION( S2_ProjectorSwitchCore, PROJSTRINGS ) * me, int nVerbose );
+int S2_ProjectorSwitchCore_PROJSTRINGS_Destructor ( START_STRUCTURE_DEFINITION( S2_ProjectorSwitchCore, PROJSTRINGS ) * me, int nVerbose );
+
+/*
+* DIGITAL_INPUT
+*/
+#define __S2_ProjectorSwitchCore_READFILE_DIG_INPUT 0
+#define __S2_ProjectorSwitchCore_PROJECTORON_DIG_INPUT 1
+#define __S2_ProjectorSwitchCore_PROJECTOROFF_DIG_INPUT 2
+#define __S2_ProjectorSwitchCore_INPUTSELECT_DIG_INPUT 3
+#define __S2_ProjectorSwitchCore_BLANKON_DIG_INPUT 4
+#define __S2_ProjectorSwitchCore_BLANKOFF_DIG_INPUT 5
+#define __S2_ProjectorSwitchCore_AUTOIMAGE_DIG_INPUT 6
+#define __S2_ProjectorSwitchCore_POLL_DIG_INPUT 7
+
+
+/*
+* ANALOG_INPUT
+*/
+
+#define __S2_ProjectorSwitchCore_PROJECTORTYPE_STRING_INPUT 0
+#define __S2_ProjectorSwitchCore_PROJECTORTYPE_STRING_MAX_LEN 16
+CREATE_STRING_STRUCT( S2_ProjectorSwitchCore, __PROJECTORTYPE, __S2_ProjectorSwitchCore_PROJECTORTYPE_STRING_MAX_LEN );
+#define __S2_ProjectorSwitchCore_RX$_STRING_INPUT 1
+#define __S2_ProjectorSwitchCore_RX$_STRING_MAX_LEN 64
+CREATE_STRING_STRUCT( S2_ProjectorSwitchCore, __RX$, __S2_ProjectorSwitchCore_RX$_STRING_MAX_LEN );
+
+
+
+/*
+* DIGITAL_OUTPUT
+*/
+#define __S2_ProjectorSwitchCore_STARTUPINPROGRESS_DIG_OUTPUT 0
+#define __S2_ProjectorSwitchCore_SHUTDOWNINPROGRESS_DIG_OUTPUT 1
+#define __S2_ProjectorSwitchCore_STARTUPCOMPLETE_DIG_OUTPUT 2
+#define __S2_ProjectorSwitchCore_SHUTDOWNCOMPLETE_DIG_OUTPUT 3
+#define __S2_ProjectorSwitchCore_POWERFB_DIG_OUTPUT 4
+#define __S2_ProjectorSwitchCore_BLANKFB_DIG_OUTPUT 5
+
+
+/*
+* ANALOG_OUTPUT
+*/
+#define __S2_ProjectorSwitchCore_PROGRESSBAR_ANALOG_OUTPUT 0
+#define __S2_ProjectorSwitchCore_FILTERHOURS_ANALOG_OUTPUT 1
+
+#define __S2_ProjectorSwitchCore_TX$_STRING_OUTPUT 2
+#define __S2_ProjectorSwitchCore_PACKETTRANSMISSION$_STRING_OUTPUT 3
+#define __S2_ProjectorSwitchCore_SELECTEDPROJECTORNAME_STRING_OUTPUT 4
+
+#define __S2_ProjectorSwitchCore_LAMPHOURS_ANALOG_OUTPUT 5
+#define __S2_ProjectorSwitchCore_LAMPHOURS_ARRAY_LENGTH 4
+#define __S2_ProjectorSwitchCore_PROJECTORNAME_STRING_OUTPUT 9
+#define __S2_ProjectorSwitchCore_PROJECTORNAME_ARRAY_LENGTH 10
+
+/*
+* Direct Socket Variables
+*/
+
+
+
+
+/*
+* INTEGER_PARAMETER
+*/
+/*
+* SIGNED_INTEGER_PARAMETER
+*/
+/*
+* LONG_INTEGER_PARAMETER
+*/
+/*
+* SIGNED_LONG_INTEGER_PARAMETER
+*/
+/*
+* INTEGER_PARAMETER
+*/
+/*
+* SIGNED_INTEGER_PARAMETER
+*/
+/*
+* LONG_INTEGER_PARAMETER
+*/
+/*
+* SIGNED_LONG_INTEGER_PARAMETER
+*/
+/*
+* STRING_PARAMETER
+*/
+
+
+/*
+* INTEGER
+*/
+
+
+/*
+* LONG_INTEGER
+*/
+
+
+/*
+* SIGNED_INTEGER
+*/
+
+
+/*
+* SIGNED_LONG_INTEGER
+*/
+
+
+/*
+* STRING
+*/
+
+/*
+* STRUCTURE
+*/
+#define __S2_ProjectorSwitchCore_PROJ_STRUCT_MAX_LEN 10
+CREATE_STRUCTURE_ARRAY( S2_ProjectorSwitchCore, __PROJ, PROJSTRINGS, __S2_ProjectorSwitchCore_PROJ_STRUCT_MAX_LEN );
+
+START_GLOBAL_VAR_STRUCT( S2_ProjectorSwitchCore )
+{
+   void* InstancePtr;
+   struct GenericOutputString_s sGenericOutStr;
+   unsigned short LastModifiedArrayIndex;
+
+   DECLARE_IO_ARRAY( __LAMPHOURS );
+   DECLARE_IO_ARRAY( __PROJECTORNAME );
+   unsigned short __PROJBUSY;
+   DECLARE_STRING_STRUCT( S2_ProjectorSwitchCore, __PROJECTORTYPE );
+   DECLARE_STRING_STRUCT( S2_ProjectorSwitchCore, __RX$ );
+};
+
+START_NVRAM_VAR_STRUCT( S2_ProjectorSwitchCore )
+{
+   unsigned short __SEL;
+   unsigned short __PROJTYPE;
+   unsigned short __STRINGFLAGS;
+   DECLARE_STRUCT_ARRAY( S2_ProjectorSwitchCore, __PROJ );
+};
+
+
+
+#endif //__S2_PROJECTORSWITCHCORE_H__
+
