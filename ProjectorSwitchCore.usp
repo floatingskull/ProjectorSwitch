@@ -1,0 +1,761 @@
+/*
+University of Washington
+Classroom Technology & Events
+David Cornwell
+*/
+
+//Compiler Directives
+
+#Default_Volatile
+#Enable_Trace
+#Print_to_Trace
+#CATEGORY "46" "UW/CTE Custom Modules"
+
+#define_constant debug 1
+#define_constant maxProj 10
+#define_constant projParams 18
+#define_constant stringLength 64
+#define_constant progRez 10
+#define_constant timeOut 10
+
+//Bitwise Flags to be used with stringFlags int.
+#define_constant pwrOnFlag 1
+#define_constant pwrOffFlag 2
+#define_constant inFlag 4
+#define_constant blOnFlag 8
+#define_constant blOffFlag 16
+#define_constant autoFlag 32
+#define_constant pwrQFlag 64
+#define_constant blQFlag 128
+#define_constant l1QFlag 256
+#define_constant l2QFlag 512
+#define_constant l3QFlag 1024
+#define_constant l4QFlag 2048
+#define_constant fltQFlag 4096
+
+
+//IO Variables
+
+digital_input ReadFile, _skip_, ProjectorOn, ProjectorOff, _skip_, InputSelect, BlankOn, BlankOff, AutoImage, _skip_, Poll;
+
+string_input ProjectorType[16], rx$[stringLength];
+
+digital_output StartupInProgress, ShutdownInProgress, StartupComplete, ShutdownComplete, PowerFB, BlankFB;
+analog_output ProgressBar, FilterHours;
+
+string_output tx$, PacketTransmission$, SelectedProjectorName;
+
+analog_output LampHours[4];
+
+string_output ProjectorName[maxProj, maxProj];
+
+//Structures
+
+structure ProjStrings {
+	string 
+	name$[stringLength], 
+	on$[stringLength], 
+	off$[stringLength],
+	inputSel$[stringLength], 
+	blankOn$[stringLength],
+	blankOff$[stringLength],
+	autoImage$[stringLength],
+	pwrQuery$[stringLength], 
+	blankQuery$[stringLength],
+	lamp1Query$[stringLength], 
+	lamp2Query$[stringLength],
+	lamp3Query$[stringLength],
+	lamp4Query$[stringLength],
+	fltQuery$[stringLength],  
+	comSetting$[stringLength];
+	
+	integer comSpeed, suTime, sdTime;
+};
+
+//Global Variables
+
+nonvolatile ProjStrings proj[maxProj];
+nonvolatile integer sel, projType, stringFlags;
+
+integer projBusy;
+
+//Functions
+
+string_function BuildComSettingString(integer comSpeed) {
+	integer spd;
+	string comSpeed$[16];
+
+	spd=0;
+
+/*	switch(comSpeed)
+	{
+		case (300):
+			spd = spd | 0x0000;
+		case (600):
+			spd = spd | 0x0001;
+		case (1200):
+			spd = spd | 0x0002;
+		case (1800):
+			spd = spd | 0x0080;		
+		case (2400):
+			spd = spd | 0x0003;		
+		case (3600):
+			spd = spd | 0x0081;
+		case (4800):
+			spd = spd | 0x0004;
+		case (7200):
+			spd = spd | 0x0082;
+		case (9600):
+			spd = spd | 0x0005;		
+		case (14400):
+			spd = spd | 0x0083;
+		case (19200):
+			spd = spd | 0x0006;		
+		case (28800):	
+			spd = spd | 0x0084;		
+		case (38400):	
+			spd = spd | 0x0007;		
+		case (57600):
+			spd = spd | 0x0085;
+		case (115):	
+			spd = spd | 0x0086;		
+		default:
+		{
+			spd = spd | 0x0005;
+			if(debug){ print("Invalid baud rate %d received - assuming 9600 baud.\n", spd); }
+		}
+	}
+	
+	makestring(comSpeed$, "%c%c%c%c%c%c%c", 0x12, 0x80, 0x00, LOW(spd), HIGH(spd), 0x00, 0x00);
+	
+	return(comSpeed$);
+}*/
+	
+
+	switch(comSpeed) {
+		case(9600): comSpeed$ = "\x12\x80\x00\x25\x00\x00\x00";
+		case(19200): comSpeed$ = "\x12\x80\x00\x26\x00\x00\x00";
+		default: {
+			if(debug) { print("Bad Com Speed: %d, assuming 9600", comSpeed); }
+			comSpeed$ = "\x12\x80\x00\x25\x00\x00\x00";
+		}
+	}
+	
+	return(comSpeed$);
+}
+
+
+function ProgressTimer(integer t) {
+//This function runs a timer for a number of seconds specified in the argument.
+	integer i;
+	
+	i = 0;
+	ProgressBar = 0;
+
+	//As long as the busy flag is high, we run a loop to progress the progress bar.		
+	while(projBusy = 1){
+		
+		//If our counter gets higher than the time we've been given in the argument
+		//we are done.  Set the busy flag low.
+		if(i > t*progRez) { projBusy = 0; }
+		else { 
+			//Otherwise, calculate how much to fill the gauge and wait a bit.
+			ProgressBar = i * 65535 / (t*progRez);
+			delay(100/progRez); 
+		}
+		//Increment!
+		i = i + 1;
+	}
+}
+
+integer_function rxValueParse(string rx) {
+//Simple parsing for values returned by a Panasonic projector during polling.
+	integer i, iloc1, iloc2, val, chars[stringLength];
+	string strChar[1], endChar[1];
+	
+	if(projType = 1) {
+	//Parse Panasonic strings.
+		if(!find("ER", rx)){
+			makestring(strChar, "%c", 0x02);
+			makestring(endChar, "%c", 0x03);
+	
+			iloc1 = find(strChar, rx);
+			iloc2 = find(endChar, rx);
+	
+			val = atoi(mid(rx, iloc1 + 1, iloc2 - (iloc1 + 1)));
+	
+			if(debug) {
+				print("iloc1 = %d, iloc2 = %d", iloc1, iloc2);
+				print("Parsed String: %s", rx);
+				print("Parsed Value is: %d", val); 
+			}
+	
+			return(val);
+		}
+		else {
+			if(debug) { print("Received an Error"); }
+			return(0);
+		}
+	}
+	else if(projType = 2) {
+	//Parse Hitachi strings.
+		if(debug) { print("Parsing: %s", rx); }
+	
+		for(i = 1 to len(rx)) { 
+			chars[i] = byte(rx, i);
+			if(debug) { print("Reading %u into %u", chars[i], i); } 
+		}
+	
+		val = chars[2] + (chars[3] << 8);
+		
+		return(val);
+	}
+}
+
+string_function TXRX(string tx, integer mode) {
+//Send the string which we have received in the argument, then wait for a reply.
+//Gather that reply together.
+	integer catchFlag, timer;
+	string rx[stringLength];
+	
+	clearbuffer(rx$);
+	rx = "";
+	
+	catchFlag = 0;
+	timer = 0;
+	
+	tx$ = tx;
+	
+    while(catchFlag = 0 && timer < timeOut) {
+		if(projType = 1) {
+		//If we're talking to a Panasonic...
+			rx = gather("\x03", rx$, 500);
+			
+			if(mode = 0 && rx = tx){
+				if(debug) { print("Success"); }
+				catchFlag = 1;
+			}
+			
+			if(mode = 1 && len(rx) > 0) {
+				if(debug) { print("Success"); }
+				catchFlag = 1;
+			}
+		}
+		if(projType = 2) {
+		//If we're talking to a Hitachi...
+			if(mode = 0) {
+				rx = rx$;
+				if(byte(rx, 1) = 0x06) { catchFlag = 1; }
+			}
+			if(mode = 1) {
+				rx = rx$;
+				if(byte(rx, 1) = 0x1D || byte(rx, 1) = 0x06) { catchFlag = 1; }
+			}
+		}
+		
+		timer = timer + 1;
+		delay(1);
+	}
+	
+	switch(mode) {
+	//If we're in mode 0, we are looking for a verbatim reply.  We'll return a
+	//1 if we received it, and a 0 if we did not.
+		case(0): {
+			if(catchFlag = 1) {
+				return("1");
+			}
+			else { return("0"); }
+		}
+	//If we're in mode 1, we're going to return the reply we received.  If we
+	//did not receive a reply, return an error string.
+		case(1): {
+			if(catchFlag = 1) {
+				return(rx);
+			}
+			else { return("Error: No Reply"); }
+		}
+	}
+}
+
+string_function CleanString(string val) {
+//Wherein we try desperately to clean up the ascii values we read from the text file
+//and properly store the unprintable characters.
+	integer i, iloc, buf[stringLength], char[stringLength];
+	string out[stringLength], temp[stringLength];
+	
+	//Initialize everything!!!!
+	for(i = 0 to stringLength) { buf[i] = 0; }
+	for(i = 0 to stringLength) { char[i] = 0; }
+	out = "";
+	
+	//Read each character of our string into an integer array consisting of the character's
+	//byte values.
+	for(i = 1 to len(val)) {
+		buf[i] = byte(val, i);
+	}
+	
+	iloc = 1;
+	i = 1;
+	
+	//Look for "\x" in the string to determine where the values that must be translated are.
+	while(i <= len(val)) {
+		if(buf[i] = 92 && buf[i+1] = 120) {
+			char[iloc] = hextoi(mid(val, i+3, 1)) + (hextoi(mid(val, i+2, 1)) << 4);
+			iloc = iloc + 1;
+			i = i + 4;
+			/*
+			if(debug) { 
+				print("Found a thing at %d", iloc);
+				print("That thing is: %X %c", char[iloc], char[iloc]); 
+			}
+			*/
+		}
+		else if(buf[i] >= 0) {
+		//If we found a character that's not a hex value, we just add it to the array directly.
+			//if(debug) { print("Non-hex value detected at: %d", iloc); }
+			char[iloc] = byte(val, i);
+			iloc = iloc + 1;
+			i = i + 1;
+		}
+		else { i = i + 1; }
+	}
+	
+	//Build the string.
+	for(i = 1 to iloc - 1) {
+		makestring(temp, "%c", char[i]);
+		out = out + temp;
+	}
+	
+	if(debug) { print("Output: %s", out); }
+	
+	return(out);
+}
+
+function InitializeProjStrings() {
+	integer i;
+	
+	for(i = 1 to maxProj) {
+		proj[i].name$ = "";
+		proj[i].on$ = "";
+		proj[i].off$ = "";
+		proj[i].inputSel$ = "";
+		proj[i].blankOn$ = "";
+		proj[i].blankOff$ = "";
+		proj[i].autoImage$ = "";
+		proj[i].pwrQuery$ = "";
+		proj[i].blankQuery$ = "";
+		proj[i].lamp1Query$ = "";
+		proj[i].lamp2Query$ = "";
+		proj[i].lamp3Query$ = "";
+		proj[i].lamp4Query$ = "";
+		proj[i].fltQuery$ = "";
+		proj[i].comSpeed = 0;
+		proj[i].suTime = 0;
+		proj[i].sdTime = 0;
+	}
+}
+		    
+function ProcessFileRead(string readBuf$) {
+	integer i, iloc1, iloc2, num, startloc, endloc, pstartloc, pendloc, fileSearchComplete;
+	string temp[projParams][stringLength];
+	
+	fileSearchComplete = 0;
+    num = 1;
+    
+    InitializeProjStrings();
+    
+	startloc = find("[startfile]", readBuf$);
+	endloc = find("[endfile]", readBuf$);
+	
+	pstartloc = find("[startproj]", readBuf$, startloc);
+	
+	while(!fileSearchComplete) {
+	
+		pendloc = find("[endproj]", readBuf$, pstartloc);
+	
+		iloc1 = find("|", readBuf$, pstartloc);
+	
+		for(i = 1 to projParams) {
+			iloc2 = find("|", readBuf$, iloc1 + 1);
+		
+			temp[i] = mid(readBuf$, iloc1 + 1, ((iloc2 - iloc1) - 1));
+		
+			iloc1 = iloc2;
+		}		
+
+		proj[num].name$ = temp[1];
+		if(debug) { 
+			print("\n");
+			print("***** Parsing: %s *****", proj[num].name$);
+			print("\n"); 
+		}
+		proj[num].on$ = CleanString(temp[2]);
+		proj[num].off$ = CleanString(temp[3]);
+		proj[num].inputSel$ = CleanString(temp[4]);
+		proj[num].blankOn$ = CleanString(temp[5]);
+		proj[num].blankOff$ = CleanString(temp[6]);
+		proj[num].autoImage$ = CleanString(temp[7]);
+		proj[num].pwrQuery$ = CleanString(temp[8]);
+		proj[num].blankQuery$ = CleanString(temp[9]);
+		proj[num].lamp1Query$ = CleanString(temp[10]);
+		proj[num].lamp2Query$ = CleanString(temp[11]);
+		proj[num].lamp3Query$ = CleanString(temp[12]);
+		proj[num].lamp4Query$ = CleanString(temp[13]);
+		proj[num].fltQuery$ = CleanString(temp[14]);
+		proj[num].comSpeed = atoi(temp[15]);
+		proj[num].suTime = atoi(temp[16]);
+		proj[num].sdTime = atoi(temp[17]);
+		
+		proj[num].comSetting$ = BuildComSettingString(proj[num].comSpeed);
+		
+		pstartloc = find("[startproj]", readBuf$, pendloc);
+		
+		if(pstartloc = 0) { fileSearchComplete = 1; }
+	
+		num = num + 1;
+	}
+	
+	for(i = 1 to maxProj) {
+		ProjectorName[i] = proj[i].name$;
+	}
+	
+	SelectedProjectorName = proj[sel].name$;
+	
+	if(debug) {
+		for(i = 1 to num-1) {
+			print("\n");
+			print("***** Projector Number %d *****", i);
+			print("\n");
+			print("Name: %s", proj[i].name$);
+			print("On String: %s", proj[i].on$);
+			print("Off String: %s", proj[i].off$);
+			print("Input Select: %s", proj[i].inputSel$);
+			print("Blank On: %s", proj[i].blankOn$);
+			print("Blank Off: %s", proj[i].blankOff$);
+			print("Auto Image: %s", proj[i].autoImage$);
+			print("Power Query: %s", proj[i].pwrQuery$);
+			print("Blank Query: %s", proj[i].blankQuery$);
+			print("Lamp 1 Query: %s", proj[i].lamp1Query$);
+			print("Lamp 2 Query: %s", proj[i].lamp2Query$);
+			print("Lamp 3 Query: %s", proj[i].lamp3Query$);
+			print("Lamp 4 Query: %s", proj[i].lamp4Query$);
+			print("Filter Query: %s", proj[i].fltQuery$);
+			print("Serial Speed Integer: %d", proj[i].comSpeed);
+			print("Startup Time: %d", proj[i].suTime);
+			print("Shutdown Time: %d", proj[i].sdTime);
+			print("Com Setting String: %s", proj[i].comSetting$);
+		}
+	}
+	
+	if(debug) { print("ProcessFileRead() complete."); }
+}
+
+//Events
+
+push ReadFile {
+	
+	integer i;
+	integer fileSize;
+ 	signed_integer fileHandler;
+    string readBuf$[2048];
+    
+    file_info fileInfo;
+		
+	//Begin file operations
+ 	startfileoperations();
+ 	
+ 	//Try to open the projector control text file, read only, as a binary.  Check the
+ 	//return value for an error.
+ 	
+ 	/********** NOTE: FOR 3 SERIES PROCESSORS THIS NEEDS TO BE FileOpenShared **********/
+ 	/**********       FOR 2 SERIES PROCESSORS THIS NEEDS TO BE FileOpen       **********/
+ 	fileHandler = fileopen("\\USER\\projectorcontrol.txt", _o_rdonly|_o_binary);
+ 	
+ 	//Print the value we got back from the fileopen command.
+ 	if(debug) { 
+ 		print("Error Code = %u", fileHandler); 
+ 		if(fileHandler = -3024) { print("***** File Not Found *****"); }
+ 	}
+ 	
+ 	if(fileHandler >= 0) {
+ 	//If we didn't get an error opening the file...
+ 	
+	 	//Find the size of the projector control text file and print it.
+ 		fileSize = filelength(fileHandler);
+ 		if(debug) { print("Size of the Projector Control file = %u", fileSize); }
+ 		
+ 		//Read the contents of the file into the buffer.
+ 		fileread(fileHandler, readBuf$, fileSize);
+ 	}
+ 	//close the file.
+ 	fileclose(fileHandler);
+ 	
+ 	//End our file operations.
+ 	endfileoperations();
+ 	
+ 	if(debug) { print("Push ReadFile complete"); }
+ 	
+ 	ProcessFileRead(readBuf$);
+}
+
+
+change ProjectorType {
+//Wherein we allow the user to select which type of projector the system will
+//be using.  Input can either be numerical or the full name of the projector,
+//matching the proj.name$ variable.
+	integer i, typeMatch;
+	
+	typeMatch = 0;
+	
+	//Check the input against each of the proj.name$ variables to see if the user
+	//entered the full name.
+	for(i = 1 to maxProj) {
+		if(ProjectorType = proj[i].name$) { 
+			sel = i;
+			typeMatch = 1;
+		}
+	}
+	//If that didn't pan out, convert the input to an integer and see if it matches
+	//the range for our list of projector types.
+	if(typeMatch = 0){ 
+		sel = atoi(ProjectorType);
+		
+		//If the input didn't match the correct range, print an error.
+		if(sel > maxProj || sel < 0) {
+			if(debug) { print("Error, improper projector type: %s", ProjectorType); }
+			sel = 0;
+		}
+	}
+	
+	if(left(proj[sel].name$, 9) = "Panasonic") { projType = 1; }
+	if(left(proj[sel].name$, 7) = "Hitachi") { projType = 2; }
+    
+    //Initialize our flag variable, then set all of our flags for this projector,
+    //allowing us to know which strings we can send.
+    stringFlags = 0;
+	if(proj[sel].on$ != "NULL") { stringFlags = stringFlags | pwrOnFlag; }
+	if(proj[sel].off$ != "NULL") { stringFlags = stringFlags | pwrOffFlag; }
+	if(proj[sel].inputSel$ != "NULL") { stringFlags = stringFlags | inFlag; }
+	if(proj[sel].blankOn$ != "NULL") { stringFlags = stringFlags | blOnFlag; }
+	if(proj[sel].blankOff$ != "NULL") { stringFlags = stringFlags | blOffFlag; }
+	if(proj[sel].autoImage$ != "NULL") { stringFlags = stringFlags | autoFlag; }
+	if(proj[sel].pwrQuery$ != "NULL") { stringFlags = stringFlags | pwrQFlag; }
+	if(proj[sel].blankQuery$ != "NULL") { stringFlags = stringFlags | blQFlag; }
+	if(proj[sel].lamp1Query$ != "NULL") { stringFlags = stringFlags | l1QFlag; }
+	if(proj[sel].lamp2Query$ != "NULL") { stringFlags = stringFlags | l2QFlag; }
+	if(proj[sel].lamp3Query$ != "NULL") { stringFlags = stringFlags | l3QFlag; }
+	if(proj[sel].lamp4Query$ != "NULL") { stringFlags = stringFlags | l4QFlag; }
+	if(proj[sel].fltQuery$ != "NULL") { stringFlags = stringFlags | fltQFlag; }
+	
+	if(debug) { print("Flags = %u", stringFlags); }
+	
+	//Set the output to the name string for the selected projector.
+	SelectedProjectorName = proj[sel].name$;
+	PacketTransmission$ = proj[sel].comSetting$;
+}
+
+push ProjectorOn {
+//Turning the projector on.	
+	string rx[stringLength];
+	integer reply;
+	
+	if(projBusy = 0) {
+	//Make sure we're not already starting up or shutting down.
+		//Send the power on string.
+    	if(atoi(TXRX(proj[sel].on$, 0)) = 1) { PowerFB = 1; }
+    	
+    	//Hitachis need help.
+    	//if(projType = 2) { PowerFB = 1; }
+    	
+    	//Set our tracking flags.
+		projBusy = 1;
+		StartupInProgress = 1;
+		//Call the function to run a timer for a number of seconds equal
+		//to the projector's startup time.
+		ProgressTimer(proj[sel].suTime);
+		
+		//Now we wait until the timer has finished.
+		while(projBusy = 1) {
+			delay(1);
+		}
+		
+		//Reset this last flag.
+		StartupInProgress = 0;
+		//Pulse that we've finished starting up.
+		pulse(200, StartupComplete);
+	}
+}
+
+push ProjectorOff {
+//Turning the projector off.
+	string rx[stringLength];
+	
+	if(projBusy = 0) {
+	//Make sure we're not already starting up or shutting down.
+		//Send the power off string.
+		if(atoi(TXRX(proj[sel].off$, 0)) = 1) { PowerFB = 0; }
+		
+		//Hitachis need help.
+    	//if(projType = 2) { PowerFB = 0; }		
+		
+		//Set our tracking flags.
+		projBusy = 1;
+		ShutdownInProgress = 1;
+		//Call the function to run a timer for a number of seconds equal
+		//to the projector's shutdown time.
+		ProgressTimer(proj[sel].sdTime);
+		
+		//Now we wait until the timer has finished.
+		while(projBusy = 1) {
+			delay(1);
+		}
+				
+		//Reset this last flag.
+		ShutdownInProgress = 0;
+		//Pulse that we've finished starting up.
+		pulse(200, ShutdownComplete);
+	}
+}
+
+push InputSelect {
+    if(find("ER", TXRX(proj[sel].inputSel$, 1)) > 0) { if(debug) { print("Received an Error"); } }
+}
+
+push BlankOn {
+	if(atoi(TXRX(proj[sel].blankOn$, 0))) { BlankFB = 1; }
+	
+	//Hitachis need help.
+    //if(projType = 2) { BlankFB = 1; }
+}
+
+push BlankOff {
+	if(atoi(TXRX(proj[sel].blankOff$, 0))) { BlankFB = 0; }
+	
+	//Hitachis need help.
+    //if(projType = 2) { BlankFB = 0; }
+}
+
+push AutoImage {
+	if(find("ER", TXRX(proj[sel].autoImage$, 1)) > 0) { if(debug) { print("Received an Error"); } }
+}
+
+push Poll {
+	string rx[stringLength];
+	
+	//Poll power state
+	if((stringFlags & pwrQFlag) = pwrQFlag) {
+		if(debug) { print("Querying Power State"); }
+		rx = TXRX(proj[sel].pwrQuery$, 1);
+		PowerFB = rxValueParse(rx);
+	}
+
+	//Poll blank state
+	if((stringFlags & blQFlag) = blQFlag) {
+		if(debug) { print("Querying Blank State"); }
+		rx = TXRX(proj[sel].blankQuery$, 1);
+		BlankFB = rxValueParse(rx);
+	}
+	
+	//Poll lamp 1 hours
+	if((stringFlags & l1QFlag) = l1QFlag) {
+		if(debug) { print("Querying Lamp 1 Hours"); }
+		rx = TXRX(proj[sel].lamp1Query$, 1);
+		LampHours[1] = rxValueParse(rx);
+	}
+	
+	//Poll lamp 2 hours
+	if((stringFlags & l2QFlag) = l2QFlag) {
+		if(debug) { print("Querying Lamp 2 Hours"); }
+		rx = TXRX(proj[sel].lamp2Query$, 1);
+		LampHours[2] = rxValueParse(rx);
+	}
+
+	//Poll lamp 3 hours
+	if((stringFlags & l3QFlag) = l3QFlag) {
+		if(debug) { print("Querying Lamp 3 Hours"); }
+		rx = TXRX(proj[sel].lamp3Query$, 1);
+		LampHours[3] = rxValueParse(rx);
+	}
+
+	//Poll lamp 4 hours
+	if((stringFlags & l4QFlag) = l4QFlag) {
+		if(debug) { print("Querying Lamp 4 Hours"); }
+		rx = TXRX(proj[sel].lamp4Query$, 1);
+		LampHours[4] = rxValueParse(rx);
+	}
+
+	//Poll filter hours
+	if((stringFlags & fltQFlag) = fltQFlag) {
+		if(debug) { print("Querying Filter Hours"); }
+		rx = TXRX(proj[sel].fltQuery$, 1);	
+		FilterHours = rxValueParse(rx);
+	}
+}
+
+//Main (Startup Code)
+
+Function Main()
+{
+    waitforinitializationcomplete();
+    
+    PacketTransmission$ = proj[sel].comSetting$;
+}
+
+
+
+
+/*
+set serial speed to 9600
+
+\x12\x80\x00\x25\x00\x00\x00
+
+set serial speed to 19200
+
+\x12\x80\x00\x26\x00\x00\x00
+*/
+	
+	/* What follows is the old official Crestron module's method of building
+	serial strings to send to the comswitch.
+	switch(comSpeed)
+	{
+		case (300):
+			spd = spd | 0x0000;
+		case (600):
+			spd = spd | 0x0001;
+		case (1200):
+			spd = spd | 0x0002;
+		case (1800):
+			spd = spd | 0x0080;		
+		case (2400):
+			spd = spd | 0x0003;		
+		case (3600):
+			spd = spd | 0x0081;
+		case (4800):
+			spd = spd | 0x0004;
+		case (7200):
+			spd = spd | 0x0082;
+		case (9600):
+			spd = spd | 0x0005;		
+		case (14400):
+			spd = spd | 0x0083;
+		case (19200):
+			spd = spd | 0x0006;		
+		case (28800):	
+			spd = spd | 0x0084;		
+		case (38400):	
+			spd = spd | 0x0007;		
+		case (57600):
+			spd = spd | 0x0085;
+		case (115):	
+			spd = spd | 0x0086;		
+		default:
+		{
+			spd = spd | 0x0005;
+			if(debug){ print("Invalid baud rate %d received - assuming 9600 baud.\n", spd); }
+		}
+	}
+	
+	makestring(comSpeed$, "%c%c%c%c%c%c%c", 0x12, 0x80, 0x00, LOW(spd), HIGH(spd), 0x00, 0x00);
+	
+	return(comSpeed$);
+}*/
